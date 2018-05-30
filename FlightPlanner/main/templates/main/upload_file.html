@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload File</title>
+</head>
+<body>
+    <form action="{% url 'main:upload_file' %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="k_file">
+        <br><br>
+        <button type="submit" class="btn btn-primary btn-lg m-l-15 waves-effect">Upload KML file</button>
+    </form>
+
+</body>
+</html>
