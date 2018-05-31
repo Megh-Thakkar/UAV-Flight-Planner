@@ -22,3 +22,17 @@ def render_map(request, name):
 
 def test(request):
     return render(request, 'main/test.html')
+
+####################################    Main Functions    ####################################
+
+def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GSD, pixel_to_km=0.00001, img_overlap=0.2):
+    coordinates = []
+    per_X = GSD * x_resolution * pixel_to_km
+    per_Y = GSD * y_resolution * pixel_to_km
+    y = y1
+    while (y <= y3):
+        x = x4
+        while (x <= x2):
+            coordinates.append({'X':x, 'Y':y})
+            x = x - img_overlap + per_X
+        y = y - img_overlap + per_Y

@@ -10,6 +10,7 @@
       }
     </style>
     <script src="https://openlayers.org/en/v4.6.5/build/ol.js" type="text/javascript"></script>
+      <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="robots" content="index, all" />
     <title>DigitalGlobe - ol3-cesium</title>
@@ -17,7 +18,8 @@
     <link rel="stylesheet" href="{% static 'main/css/ol3-layerswitcher.css' %}" type="text/css">
   </head>
   <body>
-    <div id="map" class="map" style="width:730px;height:600px;"></div>
+    <div id="info">&nbsp;</div>
+    <div id="map" class="map"></div>
     <input type="button" value="3D / 2D" onclick="javascript:ol3d.setEnabled(!ol3d.getEnabled())" />
     <script src="{% static 'main/js/inject_ol3_cesium.js' %}"></script>
     <script src="{% static 'main/js/ol3-layerswitcher.js' %}"></script>
