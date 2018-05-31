@@ -36,3 +36,64 @@ def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GS
             coordinates.append({'X':x, 'Y':y})
             x = x - img_overlap + per_X
         y = y - img_overlap + per_Y
+
+
+import geocoding_for_kml.py
+import csv
+import xml.dom.minidom
+import sys
+
+
+def extractAddress(row):
+    return '%s,%s,%s,%s,%s' % (row['placemark_number'], row['latitude'],
+                               row['longitude'], row['zone'], row['computed_elevation'])
+
+
+def createKML(csvReader, fileName, order):
+    # This constructs the KML document from the CSV file.
+    kmlDoc = xml.dom.minidom.Document()
+    kmlElement = kmlDoc.createElementNS('http://earth.google.com/kml/2.2 ', 'kml')  # url to be added
+    kmlElement.setAttribute('xmlns', 'http://earth.google.com/kml/2.2')  # uurl to be added
+    kmlElement = kmlDoc.appendChild(kmlElement)
+    documentElement = kmlDoc.createElement('Document')
+    documentElement = kmlElement.appendChild(documentElement)
+
+    csvReader.next()
+    for row in csvReader:
+        placemarkElement = createPlacemark(kmlDoc, row, num)
+        documentElement.appendChild(placemarkElement)
+    kmlFile = open(fileName, 'w')
+    kmlFile.write(kmlDoc.toprettyxml('  ', newl='\n', encoding='utf-8'))
+
+
+def createPlacemark(kmlDoc, row, num):
+    placemarkElement = kmlDoc.createElement('Placemark')
+    extElement = kmlDoc.createElement('ExtendedData')
+    placemarkElement.appendChild(extElement)
+    for key in num:
+        if row[key]:
+            dataElement = kmlDoc.createElement('Data')
+            dataElement.setAttribute('name', key)
+            valueElement = kmlDoc.createElement('value')
+            dataElement.appendChild(valueElement)
+            valueText = kmlDoc.createTextNode(row[key])
+            valueElement.appendChild(valueText)
+            extElement.appendChild(dataElement)
+
+    pointElement = kmlDoc.createElement('Point')
+    placemarkElement.appendChild(pointElement)
+    coordinates = geocoding_for_kml.geocode(extractAddress(row))
+    coorElement = kmlDoc.createElement('coordinates')
+    coorElement.appendChild(kmlDoc.createTextNode(coordinates))
+    pointElement.appendChild(coorElement)
+    return placemarkElement
+
+
+
+
+
+
+
+
+
+
