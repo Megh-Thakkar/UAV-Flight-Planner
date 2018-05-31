@@ -1,16 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Upload File</title>
-</head>
-<body>
-    <form action="{% url 'main:upload_file' %}" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <input type="file" name="k_file">
-        <br><br>
-        <button type="submit" class="btn btn-primary btn-lg m-l-15 waves-effect">Upload KML file</button>
-    </form>
+{% load static %}
+<!DOCTYPE html>
+  <html>
+    <head>
+      <!--Import Google Icon Font-->
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <!--Import materialize.css-->
+      <link type="text/css" rel="stylesheet" href="{% static 'main/css/materialize.min.css' %}"  media="screen,projection"/>
 
+      <!--Let browser know website is optimized for mobile-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    </head>
+<body>
+    <div class="container">
+        <div class="row">
+            <form class="col s12">
+              <div class="row">
+                <div class="input-field col s6">
+                  <input id="x1" type="text" class="validate">
+                  <label for="x1">Lat 1</label>
+                </div>
+                <div class="input-field col s6">
+                  <input id="y1" type="text" class="validate">
+                  <label for="y1">Lon 1</label>
+                </div>
+              </div>
+              <div class="row">
+                <div class="input-field col s6">
+                  <input id="x2" type="text" class="validate">
+                  <label for="x2">Lat 2</label>
+                </div>
+                <div class="input-field col s6">
+                  <input id="y2" type="text" class="validate">
+                  <label for="y2">Lon 2</label>
+                </div>
+              </div>
+              <div class="row">
+                <div class="input-field col s6">
+                  <input id="x3" type="text" class="validate">
+                  <label for="x3">Lat 3</label>
+                </div>
+                <div class="input-field col s6">
+                  <input id="y3" type="text" class="validate">
+                  <label for="y3">Lon 3</label>
+                </div>
+              </div>
+              <div class="row">
+                <div class="input-field col s6">
+                  <input id="x4" type="text" class="validate">
+                  <label for="x4">Lat 4</label>
+                </div>
+                <div class="input-field col s6">
+                  <input id="y4" type="text" class="validate">
+                  <label for="y4">Lon 4</label>
+                </div>
+              </div>
+              <div class="row">
+                <div class="input-field col s6">
+                  <input id="gsd" type="text" class="validate">
+                  <label for="gsd">GSD</label>
+                </div>
+                <div class="input-field col s6">
+                  <input id="pixel_to_km" type="text" class="validate" value="0.00001">
+                  <label for="pixel_to_km">Pixel to KM</label>
+                </div>
+              </div>
+              <div class="row">
+                <div class="input-field col s6">
+                  <input id="x_res" type="text" class="validate">
+                  <label for="x_res">X-Resolution</label>
+                </div>
+                <div class="input-field col s6">
+                  <input id="y_res" type="text" class="validate">
+                  <label for="y_res">Y-Resolution</label>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-lg m-l-15 waves-effect">Submit</button>
+            </form>
+        </div>
+        <hr>
+        <br><br>
+        <div class="row">
+            <form action="{% url 'main:upload_file' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" name="k_file">
+                <br><br>
+                <button type="submit" class="btn btn-primary btn-lg m-l-15 waves-effect">Upload KML file</button>
+            </form>
+        </div>
+    </div>
+    <script type="text/javascript" src="{% static 'main/js/materialize.min.js' %}"></script>
 </body>
 </html>

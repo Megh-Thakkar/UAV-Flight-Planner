@@ -37,8 +37,6 @@ def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GS
             x = x - img_overlap + per_X
         y = y - img_overlap + per_Y
 
-
-import geocoding_for_kml.py
 import csv
 import xml.dom.minidom
 import sys
@@ -82,9 +80,8 @@ def createPlacemark(kmlDoc, row, num):
 
     pointElement = kmlDoc.createElement('Point')
     placemarkElement.appendChild(pointElement)
-    coordinates = geocoding_for_kml.geocode(extractAddress(row))
     coorElement = kmlDoc.createElement('coordinates')
-    coorElement.appendChild(kmlDoc.createTextNode(coordinates))
+    # coorElement.appendChild(kmlDoc.createTextNode(coordinates))
     pointElement.appendChild(coorElement)
     return placemarkElement
 
