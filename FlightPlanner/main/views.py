@@ -18,3 +18,6 @@ def upload_file(request):
 
 def render_map(request, name):
     return render(request, 'main/render_map.html', {"name":'kmlfile' + name+'.kml'})
+
+def test(request):
+    return render(request, 'main/test.html')

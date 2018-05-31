@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+{% load static %}
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+	<link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
+    <style>
+      .map {
+        height: 400px;
+        width: 100%;
+      }
+    </style>
+    <script src="https://openlayers.org/en/v4.6.5/build/ol.js" type="text/javascript"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="robots" content="index, all" />
+    <title>DigitalGlobe - ol3-cesium</title>
+    <link rel="stylesheet" href="{% static 'main/css/ol.css' %}" type="text/css">
+    <link rel="stylesheet" href="{% static 'main/css/ol3-layerswitcher.css' %}" type="text/css">
+  </head>
+  <body>
+    <div id="map" class="map" style="width:730px;height:600px;"></div>
+    <input type="button" value="3D / 2D" onclick="javascript:ol3d.setEnabled(!ol3d.getEnabled())" />
+    <script src="{% static 'main/js/inject_ol3_cesium.js' %}"></script>
+    <script src="{% static 'main/js/ol3-layerswitcher.js' %}"></script>
+    <script src="{% static 'main/js/digitalglobe.js' %}"></script>
+  </body>
+</html>

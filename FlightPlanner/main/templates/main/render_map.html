@@ -13,12 +13,15 @@
     <script>
       var projection = ol.proj.get('EPSG:3857');
 
+      <!--var raster = new ol.layer.Tile({-->
+        <!--source: new ol.source.BingMaps({-->
+          <!--imagerySet: 'Aerial',-->
+          <!--key: 'AlNk4U61H2Tk9kCiRmzUws1dazVxUh6BUeV5YRJAq5_KEw-dsiKj7AbgYtFnS7mR'-->
+        <!--})-->
+      <!--});-->
       var raster = new ol.layer.Tile({
-        source: new ol.source.BingMaps({
-          imagerySet: 'Aerial',
-          key: 'AlNk4U61H2Tk9kCiRmzUws1dazVxUh6BUeV5YRJAq5_KEw-dsiKj7AbgYtFnS7mR'
-        })
-      });
+            source: new ol.source.OSM()
+          });
 
       var vector = new ol.layer.Vector({
         source: new ol.source.Vector({
