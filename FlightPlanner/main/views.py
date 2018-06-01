@@ -25,6 +25,10 @@ def test(request):
 
 ####################################    Main Functions    ####################################
 
+import csv
+import simplekml
+
+
 def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GSD, pixel_to_km=0.00001, img_overlap=0.2):
     coordinates = []
     per_X = GSD * x_resolution * pixel_to_km
@@ -37,53 +41,22 @@ def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GS
             x = x - img_overlap + per_X
         y = y - img_overlap + per_Y
 
-import csv
-import xml.dom.minidom
-import sys
 
+def generate_kml(filename):
+    inputfile = csv.reader(open(filename,'r'))
+    kml=simplekml.Kml()
+    ls = kml.newlinestring(name="Journey path")
 
-def extractAddress(row):
-    return '%s,%s,%s,%s,%s' % (row['placemark_number'], row['latitude'],
-                               row['longitude'], row['zone'], row['computed_elevation'])
-
-
-def createKML(csvReader, fileName, order):
-    # This constructs the KML document from the CSV file.
-    kmlDoc = xml.dom.minidom.Document()
-    kmlElement = kmlDoc.createElementNS('http://earth.google.com/kml/2.2 ', 'kml')  # url to be added
-    kmlElement.setAttribute('xmlns', 'http://earth.google.com/kml/2.2')  # uurl to be added
-    kmlElement = kmlDoc.appendChild(kmlElement)
-    documentElement = kmlDoc.createElement('Document')
-    documentElement = kmlElement.appendChild(documentElement)
-
-    csvReader.next()
-    for row in csvReader:
-        placemarkElement = createPlacemark(kmlDoc, row, num)
-        documentElement.appendChild(placemarkElement)
-    kmlFile = open(fileName, 'w')
-    kmlFile.write(kmlDoc.toprettyxml('  ', newl='\n', encoding='utf-8'))
-
-
-def createPlacemark(kmlDoc, row, num):
-    placemarkElement = kmlDoc.createElement('Placemark')
-    extElement = kmlDoc.createElement('ExtendedData')
-    placemarkElement.appendChild(extElement)
-    for key in num:
-        if row[key]:
-            dataElement = kmlDoc.createElement('Data')
-            dataElement.setAttribute('name', key)
-            valueElement = kmlDoc.createElement('value')
-            dataElement.appendChild(valueElement)
-            valueText = kmlDoc.createTextNode(row[key])
-            valueElement.appendChild(valueText)
-            extElement.appendChild(dataElement)
-
-    pointElement = kmlDoc.createElement('Point')
-    placemarkElement.appendChild(pointElement)
-    coorElement = kmlDoc.createElement('coordinates')
-    # coorElement.appendChild(kmlDoc.createTextNode(coordinates))
-    pointElement.appendChild(coorElement)
-    return placemarkElement
+    inputfile.next()
+    for row in inputfile:
+            ls.coords.addcoordinates([(row[1],row[0]),row[2]])
+    ls.extrude = 1
+    ls.tessellate = 1
+    ls.altitudemode = simplekml.AltitudeMode.absolute
+    ls.style.linestyle.color = '7f00ffff'
+    ls.style.linestyle.width = 4
+    ls.style.polystyle.color = '7f00ff00'
+    kml.save('fooline.kml')
 
 
 
