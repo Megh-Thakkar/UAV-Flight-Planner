@@ -136,6 +136,20 @@ def verti_center(coordinates=[],height_change=[]):
             center.append({'X':x_cen,'Y':y_cen})
     verti_center_main.append(center)
 
+def intersection(verti_center_main=[],hori_center_main=[]):
+	elevat_centers=[]
+	from sympy.geometry import Point, Line,intersection
+	for i in range(len(hori_center_main)-1):
+		for j in range(len(hori_center_main[i])):
+			p1=Point(hori_center_main[j+i])
+			p2=Point(hori_center_main[j+i+1])
+	for i in range(len(verti_center_main)-1):
+		for j in range(len(verti_center_main[i])):
+			p3=Point(verti_center_main[j+i])
+			p4=Point(verti_center_main[j+i+1])
+	l1,l2=Line(p1,p2),Line(p3,p4)
+	p=intersection(l1,l2)
+	elevat_centers.append(p)			
 
 
 
