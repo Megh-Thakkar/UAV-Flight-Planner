@@ -12,7 +12,7 @@ var ol2d = new ol.Map({
               }),
             new ol.layer.Vector({
                 source: new ol.source.Vector({
-                url: "http://127.0.0.1:8000/media/files/kmlfile7.kml",
+                url: "http://127.0.0.1:8000/media/files/kmlfile8.kml",
                 format: new ol.format.KML()
                 })
             }),

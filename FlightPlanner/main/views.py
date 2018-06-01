@@ -43,17 +43,18 @@ def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GS
 
 
 def generate_kml(filename):
-    inputfile = csv.reader(open(filename,'r'))
+    inputfile = csv.reader(open('coords.csv','r'))
     kml=simplekml.Kml()
     ls = kml.newlinestring(name="Journey path")
 
     inputfile.next()
     for row in inputfile:
-            ls.coords.addcoordinates([(row[1],row[0]),row[2]])
+		ls.coords.addcoordinates([(row[0],row[1],row[2])])
+		print row[2]
     ls.extrude = 1
     ls.tessellate = 1
     ls.altitudemode = simplekml.AltitudeMode.absolute
-    ls.style.linestyle.color = '7f00ffff'
+    ls.style.linestyle.color = '7f00ffff'   #aabbggrr
     ls.style.linestyle.width = 4
     ls.style.polystyle.color = '7f00ff00'
     kml.save('fooline.kml')
