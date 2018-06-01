@@ -108,14 +108,16 @@ def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GS
     while (y <= y3):
         x = x4
         l_no = 0
+        x_prev=x
         while (x <= x2):
-            coordinates[i].append({'X':x, 'Y':y})
+            coordinates.append({'X':x, 'Y':y})
+            x_prev=x
             x = x - img_overlap + per_X
             l_no+=1
         len_no.append(l_no)
         y = y - img_overlap + per_Y
         #h_no+=1
-        height_change.append({'X': x, 'Y': y})
+        height_change.append({'X': x_prev, 'Y': y})
 hori_center_main=[]
 def hori_center(coordinates=[],len_no=[]):
     center = []
