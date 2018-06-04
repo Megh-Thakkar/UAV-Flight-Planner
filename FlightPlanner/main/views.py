@@ -91,88 +91,48 @@ def createPlacemark(kmlDoc, row, num):
 
 
 ######################## changes and new fnc ###########
-#pixel=0.00001km
-coordinates = []
-height_change = []
-len_no=[]
+centres=[]
+import numpy as np
+def mesh(x_resolution,y_resolution,x1,y1,x2,y2,x3,y3,x4,y4,GSD,pixel_to_km=0.00001):
+	per_X=GSD*x_resolution*pixel_to_km
+	per_Y=GSD*y_resolution*pixel_to_km
+	lx=np.linspace(0,x2,int((x2-x1)/per_X))
+	ly=np.linspace(0,y3,int((y3-y1)/per_Y))
+	kx,ky=np.meshgrid(lx,ly)
 
+	for i in range(0,len(kx)-1):
+		y=(ky[i][0]+ky[i+1][0])/2.00
+		for j in range(0,len(kx[i])-1):
+			centre=(kx[i][j]+kx[i][j+1])/2.00
+			centres.append({'X':centre,'Y':y})
+			
 
-def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GSD, pixel_to_km=0.001, img_overlap=0.2):
+def pathline(centres=[]):
+	path=[]
+	lineno=0
+	rev = []
+	for i in range(0,len(centres)-1):
+		if((float(centres[i]['Y'])==float(centres[i+1]['Y'])) and lineno%2==0):
+			path.append(centres[i])
+		
+		elif ((float(centres[i]['Y'])==float(centres[i+1]['Y'])) and lineno%2==1) :
+			rev.append(centres[i])
+		else:
+			if(lineno%2==0):
+				path.append(centres[i])
+			if(lineno%2==1):
+				rev.append(centres[i])
+				#print rev, lineno
+				rev.reverse()
+				path=path + rev
+				del(rev)
+				rev = []
+			lineno+=1
+	return path
 
-    per_X = GSD * x_resolution * pixel_to_km
-    per_Y = GSD * y_resolution * pixel_to_km
-    y = y1
+			
 
-    h_no=1
-    while (y <= y3):
-        x = x4
-        l_no = 0
-        x_prev=x
-        while (x <= x2):
-            coordinates.append({'X':x, 'Y':y})
-            x_prev=x
-            x = x - img_overlap + per_X
-            l_no+=1
-        len_no.append(l_no)
-        y_prev=y
-        y = y - img_overlap + per_Y
-        #h_no+=1
-        height_change.append({'X': x_prev,'Y': y_prev})
-hori_center_main=[]
-
-def hori_center(coordinates=[],len_no=[],height_change=[]):
-	#print height_change,len_no
-	for j in range(len(height_change)):
-		center = []
-		for i in range((len_no[j])-1):
-			cen=(coordinates[i]['X']+coordinates[i+1]['X'])/2.0
-			#print cen
-			center.append({'X':cen,'Y':height_change[j]['Y']})
-		hori_center_main.append(center)
-verti_center_main=[]
-def verti_center(coordinates=[],height_change=[],len_no=[]):
-	for i in range(len(height_change)-1):
-		center=[]
-		for j in range(len_no[i]):		
-			#x_cen=coordinates[j+i]['X']+coordinates[j+i+1]['X']/2.0
-			y_cen = (coordinates[i]['Y'] + coordinates[i+1]['Y']) / 2.0
-			center.append({'X':coordinates[j]['X'],'Y':y_cen})
-		verti_center_main.append(center)
-elevat_centers=[]
-def intersection(verti_center_main=[],hori_center_main=[]):	
-	lines1=[]
-	lines2=[]
-	from sympy.geometry import Point, Line,intersection
-	for i in range(len(hori_center_main)-1):
-		for j in range(len(hori_center_main[i])):
-			p1=Point(hori_center_main[i][j]['X'],hori_center_main[i][j]['Y'])
-			p2=Point(hori_center_main[i+1][j]['X'],hori_center_main[i+1][j]['Y'])
-			print p1
-			l1=Line(p1,p2)
-			lines1.append(l1)
-	print len(lines1)
-	for i in range(len(verti_center_main)-1):
-		for j in range(len(verti_center_main[i])):
-			p3=Point(verti_center_main[i][j]['X'],verti_center_main[i][j]['Y'])
-			p4=Point(verti_center_main[i+1][j]['X'],verti_center_main[i+1][j]['Y'])
-			l2=Line(p3,p4)
-			lines2.append(l2)
-	print(len(lines2))
-	for i in range(len(lines1)):
-		p=intersection(lines1[i], lines2[i])
-		elevat_centers.append(p)			
-
-
-
-get_grid_list(1000,1000,0,0,10,0,10,20,0,20,5)
-
-hori_center(coordinates,len_no,height_change)
-verti_center(coordinates,height_change,len_no)
-print verti_center_main,"\n"
-print len(verti_center_main),"\n"
-print len(hori_center_main),"\n"
-print hori_center_main,"\n"
-intersection(verti_center_main,hori_center_main)
-print elevat_centers,"\n"
-
-
+mesh(1000,1000,0,0,1,0,1,2,0,2,5)
+path=pathline(centres)
+for i in range(0,len(path)):
+	print path[i],"\n"
