@@ -90,5 +90,64 @@ def get_elevation(lat, lng):
     return float(json.load(response)["results"][0]["elevation"])
 
 
+centres = []
+import numpy as np
+
+
+def mesh(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GSD, pixel_to_km=0.00001):
+    per_X = GSD * x_resolution * pixel_to_km
+    per_Y = GSD * y_resolution * pixel_to_km
+    lx = np.linspace(0, x2, int((x2 - x1) / per_X))
+    ly = np.linspace(0, y3, int((y3 - y1) / per_Y))
+    kx, ky = np.meshgrid(lx, ly)
+
+    for i in range(0, len(kx) - 1):
+        y = (ky[i][0] + ky[i + 1][0]) / 2.00
+        for j in range(0, len(kx[i]) - 1):
+            centre = (kx[i][j] + kx[i][j + 1]) / 2.00
+            centres.append({'X': centre, 'Y': y})
+
+
+def pathline(centres=[]):
+    path = []
+    lineno = 0
+    rev = []
+    for i in range(0, len(centres) - 1):
+        if ((float(centres[i]['Y']) == float(centres[i + 1]['Y'])) and lineno % 2 == 0):
+            path.append(centres[i])
+
+        elif ((float(centres[i]['Y']) == float(centres[i + 1]['Y'])) and lineno % 2 == 1):
+            rev.append(centres[i])
+        else:
+            if (lineno % 2 == 0):
+                path.append(centres[i])
+            if (lineno % 2 == 1):
+                rev.append(centres[i])
+                # print rev, lineno
+                rev.reverse()
+                path = path + rev
+                del (rev)
+                rev = []
+            lineno += 1
+    return path
+
+
+import csv
+
+
+def cfile(centres=[]):
+    with open('points.csv', 'wb') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow('X', 'Y')
+        for i in range(0, len(centres)):
+            filewriter.writerow([str(centres[i]['X']), str(centres[i]['Y'])])
+
+
+"""mesh(1000, 1000, 0, 0, 1, 0, 1, 2, 0, 2, 5)
+path = pathline(centres)
+cfile(centres)
+# for i in range(0,len(path)):
+#	print path[i],"\n"
+"""
 
 
