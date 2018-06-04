@@ -91,14 +91,13 @@ def createPlacemark(kmlDoc, row, num):
 
 
 ######################## changes and new fnc ###########
-"""given the area of interest we need to divide that in smaller areas and get the center of each area and then using thet estimate
-height at which the drone will fly"""
 #pixel=0.00001km
 coordinates = []
 height_change = []
 len_no=[]
 
-def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GSD, pixel_to_km=0.00001, img_overlap=0.2):
+
+def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GSD, pixel_to_km=0.001, img_overlap=0.2):
 
     per_X = GSD * x_resolution * pixel_to_km
     per_Y = GSD * y_resolution * pixel_to_km
@@ -115,42 +114,65 @@ def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GS
             x = x - img_overlap + per_X
             l_no+=1
         len_no.append(l_no)
+        y_prev=y
         y = y - img_overlap + per_Y
         #h_no+=1
-        height_change.append({'X': x_prev, 'Y': y})
+        height_change.append({'X': x_prev,'Y': y_prev})
 hori_center_main=[]
-def hori_center(coordinates=[],len_no=[]):
-    center = []
-    for j in range(len(len_no)):
-        for i in range((len_no[j])-1):
-            cen=(coordinates[i]['X']+coordinates[i+1]['X'])/2.0
-            center.append({'X':cen,'Y':y})
-        hori_center_main.append(center)
-verti_center_main=[]
-def verti_center(coordinates=[],height_change=[]):
-    center=[]
-    for i in range(len(height_change)-1):
-        for j in range(len(len_no[i])):
-            x_cen=coordinates[j+i]['X']+coordinates[j+i+1]['X']/2.0
-            y_cen = coordinates[j+i]['Y'] + coordinates[j+i + 1]['Y'] / 2.0
-            center.append({'X':x_cen,'Y':y_cen})
-    verti_center_main.append(center)
 
-def intersection(verti_center_main=[],hori_center_main=[]):
-	elevat_centers=[]
+def hori_center(coordinates=[],len_no=[],height_change=[]):
+	#print height_change,len_no
+	for j in range(len(height_change)):
+		center = []
+		for i in range((len_no[j])-1):
+			cen=(coordinates[i]['X']+coordinates[i+1]['X'])/2.0
+			#print cen
+			center.append({'X':cen,'Y':height_change[j]['Y']})
+		hori_center_main.append(center)
+verti_center_main=[]
+def verti_center(coordinates=[],height_change=[],len_no=[]):
+	for i in range(len(height_change)-1):
+		center=[]
+		for j in range(len_no[i]):		
+			#x_cen=coordinates[j+i]['X']+coordinates[j+i+1]['X']/2.0
+			y_cen = (coordinates[i]['Y'] + coordinates[i+1]['Y']) / 2.0
+			center.append({'X':coordinates[j]['X'],'Y':y_cen})
+		verti_center_main.append(center)
+elevat_centers=[]
+def intersection(verti_center_main=[],hori_center_main=[]):	
+	lines1=[]
+	lines2=[]
 	from sympy.geometry import Point, Line,intersection
 	for i in range(len(hori_center_main)-1):
 		for j in range(len(hori_center_main[i])):
-			p1=Point(hori_center_main[j+i])
-			p2=Point(hori_center_main[j+i+1])
+			p1=Point(hori_center_main[i][j]['X'],hori_center_main[i][j]['Y'])
+			p2=Point(hori_center_main[i+1][j]['X'],hori_center_main[i+1][j]['Y'])
+			print p1
+			l1=Line(p1,p2)
+			lines1.append(l1)
+	print len(lines1)
 	for i in range(len(verti_center_main)-1):
 		for j in range(len(verti_center_main[i])):
-			p3=Point(verti_center_main[j+i])
-			p4=Point(verti_center_main[j+i+1])
-	l1,l2=Line(p1,p2),Line(p3,p4)
-	p=intersection(l1,l2)
-	elevat_centers.append(p)			
+			p3=Point(verti_center_main[i][j]['X'],verti_center_main[i][j]['Y'])
+			p4=Point(verti_center_main[i+1][j]['X'],verti_center_main[i+1][j]['Y'])
+			l2=Line(p3,p4)
+			lines2.append(l2)
+	print(len(lines2))
+	for i in range(len(lines1)):
+		p=intersection(lines1[i], lines2[i])
+		elevat_centers.append(p)			
 
 
+
+get_grid_list(1000,1000,0,0,10,0,10,20,0,20,5)
+
+hori_center(coordinates,len_no,height_change)
+verti_center(coordinates,height_change,len_no)
+print verti_center_main,"\n"
+print len(verti_center_main),"\n"
+print len(hori_center_main),"\n"
+print hori_center_main,"\n"
+intersection(verti_center_main,hori_center_main)
+print elevat_centers,"\n"
 
 
