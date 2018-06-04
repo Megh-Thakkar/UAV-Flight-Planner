@@ -188,9 +188,18 @@
                         setSelection(newShape);
                     }
                 });
+                var ne, sw;
                 google.maps.event.addListener(drawingManager, 'rectanglecomplete', function (rectangle) {
-                    var ne = rectangle.getBounds().getNorthEast();
-                    var sw = rectangle.getBounds().getSouthWest();
+                    google.maps.event.addListener(rectangle, 'bounds_changed', function(){
+                            ne = rectangle.getBounds().getNorthEast();
+                            sw = rectangle.getBounds().getSouthWest();
+                            var contentString = 'Rectangle made. ' +
+                                'New north-east corner: ' + ne.lat() + ', ' + ne.lng() + ' ' +
+                                'New south-west corner: ' + sw.lat() + ', ' + sw.lng();
+                            console.log(contentString);
+                    });
+                    ne = rectangle.getBounds().getNorthEast();
+                    sw = rectangle.getBounds().getSouthWest();
 
                     var contentString = 'Rectangle made. ' +
                         'New north-east corner: ' + ne.lat() + ', ' + ne.lng() + ' ' +
@@ -204,8 +213,16 @@
                 google.maps.event.addDomListener(document.getElementById('delete-button'), 'click', deleteSelectedShape);
 
                 buildColorPalette();
+                document.getElementById("submit-button").onclick = function() {
+                    if(ne !== undefined && sw !== undefined)
+                        console.log(ne.lat(), ne.lng(), sw.lat(), sw.lng());
+                    else
+                        console.log('No shape');
+                };
             }
             google.maps.event.addDomListener(window, 'load', initialize);
+
+
         </script>
     </head>
     <body>
@@ -214,7 +231,11 @@
             <div>
                 <button id="delete-button">Delete Selected Shape</button>
             </div>
+            <div>
+            <button id="submit-button">Finalize Latest Shape</button>
+        </div>
         </div>
         <div id="map"></div>
+
     </body>
 </html>
