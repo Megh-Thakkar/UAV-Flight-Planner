@@ -80,50 +80,48 @@ def generate_kml(filename):
 
 
 ######################## changes and new fnc ###########
-"""given the area of interest we need to divide that in smaller areas and get the center of each area and then using thet estimate
-height at which the drone will fly"""
-#pixel=0.00001km
-coordinates = []
-height_change = []
-len_no=[]
+centres=[]
+import numpy as np
+def mesh(x_resolution,y_resolution,x1,y1,x2,y2,x3,y3,x4,y4,GSD,pixel_to_km=0.00001):
+	per_X=GSD*x_resolution*pixel_to_km
+	per_Y=GSD*y_resolution*pixel_to_km
+	lx=np.linspace(0,x2,int((x2-x1)/per_X))
+	ly=np.linspace(0,y3,int((y3-y1)/per_Y))
+	kx,ky=np.meshgrid(lx,ly)
 
-def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GSD, pixel_to_km=0.00001, img_overlap=0.2):
+	for i in range(0,len(kx)-1):
+		y=(ky[i][0]+ky[i+1][0])/2.00
+		for j in range(0,len(kx[i])-1):
+			centre=(kx[i][j]+kx[i][j+1])/2.00
+			centres.append({'X':centre,'Y':y})
+			
 
-    per_X = GSD * x_resolution * pixel_to_km
-    per_Y = GSD * y_resolution * pixel_to_km
-    y = y1
+def pathline(centres=[]):
+	path=[]
+	lineno=0
+	rev = []
+	for i in range(0,len(centres)-1):
+		if((float(centres[i]['Y'])==float(centres[i+1]['Y'])) and lineno%2==0):
+			path.append(centres[i])
+		
+		elif ((float(centres[i]['Y'])==float(centres[i+1]['Y'])) and lineno%2==1) :
+			rev.append(centres[i])
+		else:
+			if(lineno%2==0):
+				path.append(centres[i])
+			if(lineno%2==1):
+				rev.append(centres[i])
+				#print rev, lineno
+				rev.reverse()
+				path=path + rev
+				del(rev)
+				rev = []
+			lineno+=1
+	return path
 
-    h_no=1
-    while (y <= y3):
-        x = x4
-        l_no = 0
-        while (x <= x2):
-            coordinates[i].append({'X':x, 'Y':y})
-            x = x - img_overlap + per_X
-            l_no+=1
-        len_no.append(l_no)
-        y = y - img_overlap + per_Y
-        #h_no+=1
-        height_change.append({'X': x, 'Y': y})
-hori_center_main=[]
-def hori_center(coordinates=[],len_no=[]):
-    center = []
-    for j in range(len(len_no)):
-        for i in range((len_no[j])-1):
-            cen=(coordinates[i]['X']+coordinates[i+1]['X'])/2.0
-            center.append({'X':cen,'Y':y})
-        hori_center_main.append(center)
-verti_center_main=[]
-def verti_center(coordinates=[],height_change=[]):
-    center=[]
-    for i in range(len(height_change)-1):
-        for j in range(len(len_no[i])):
-            x_cen=coordinates[j+i]['X']+coordinates[j+i+1]['X']/2.0
-            y_cen = coordinates[j+i]['Y'] + coordinates[j+i + 1]['Y'] / 2.0
-            center.append({'X':x_cen,'Y':y_cen})
-    verti_center_main.append(center)
+			
 
-
-
-
-
+mesh(1000,1000,0,0,1,0,1,2,0,2,5)
+path=pathline(centres)
+for i in range(0,len(path)):
+	print path[i],"\n"
