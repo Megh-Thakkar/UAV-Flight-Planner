@@ -23,6 +23,24 @@ def render_map(request, name):
 def test(request):
     return render(request, 'main/test.html')
 
+def input_map(request):
+    if request.method == 'POST':
+        data = request.POST
+        if (data['ne_lng'] == '' or data['ne_lat'] == '' or data['sw_lng'] == '' or data['sw_lat'] == ''):
+            return redirect("main:input_map")
+        ne_lng = float(data['ne_lng'])
+        ne_lat = float(data['ne_lat'])
+        sw_lng = float(data['sw_lng'])
+        sw_lat = float(data['sw_lat'])
+
+        import utm
+        NE_UTM = utm.from_latlon(ne_lat, ne_lng)
+        SW_UTM = utm.from_latlon(sw_lat, sw_lng)
+        print NE_UTM, SW_UTM
+        return HttpResponse('Coords printed')
+    else:
+        return render(request, 'main/input_map.html')
+
 ####################################    Main Functions    ####################################
 
 import csv
@@ -49,8 +67,8 @@ def generate_kml(filename):
 
     inputfile.next()
     for row in inputfile:
-		ls.coords.addcoordinates([(row[0],row[1],row[2])])
-		print row[2]
+        ls.coords.addcoordinates([(row[0],row[1],row[2])])
+        print row[2]
     ls.extrude = 1
     ls.tessellate = 1
     ls.altitudemode = simplekml.AltitudeMode.absolute
