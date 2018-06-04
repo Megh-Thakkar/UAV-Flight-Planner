@@ -60,14 +60,16 @@ def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GS
         y = y - img_overlap + per_Y
 
 
-def generate_kml(filename):
-    inputfile = csv.reader(open('coords.csv','r'))
+def generate_kml(filename, zone_no, zone_name):
+    import utm
+    inputfile = csv.reader(open(filename,'r'))
     kml=simplekml.Kml()
     ls = kml.newlinestring(name="Journey path")
 
     inputfile.next()
     for row in inputfile:
-        ls.coords.addcoordinates([(row[0],row[1],row[2])])
+        lat, lng = utm.to_latlon(row[0], row[1], zone_no, zone_name)
+        ls.coords.addcoordinates([(lng, lat, row[2])])  #longitude, latitude
         print row[2]
     ls.extrude = 1
     ls.tessellate = 1
@@ -80,49 +82,12 @@ def generate_kml(filename):
 
 
 ######################## changes and new fnc ###########
-"""given the area of interest we need to divide that in smaller areas and get the center of each area and then using thet estimate
-height at which the drone will fly"""
-#pixel=0.00001km
-coordinates = []
-height_change = []
-len_no=[]
 
-def get_grid_list(x_resolution, y_resolution, x1, y1, x2, y2, x3, y3, x4, y4, GSD, pixel_to_km=0.00001, img_overlap=0.2):
-
-    per_X = GSD * x_resolution * pixel_to_km
-    per_Y = GSD * y_resolution * pixel_to_km
-    y = y1
-
-    h_no=1
-    while (y <= y3):
-        x = x4
-        l_no = 0
-        while (x <= x2):
-            coordinates[i].append({'X':x, 'Y':y})
-            x = x - img_overlap + per_X
-            l_no+=1
-        len_no.append(l_no)
-        y = y - img_overlap + per_Y
-        #h_no+=1
-        height_change.append({'X': x, 'Y': y})
-hori_center_main=[]
-def hori_center(coordinates=[],len_no=[]):
-    center = []
-    for j in range(len(len_no)):
-        for i in range((len_no[j])-1):
-            cen=(coordinates[i]['X']+coordinates[i+1]['X'])/2.0
-            center.append({'X':cen,'Y':y})
-        hori_center_main.append(center)
-verti_center_main=[]
-def verti_center(coordinates=[],height_change=[]):
-    center=[]
-    for i in range(len(height_change)-1):
-        for j in range(len(len_no[i])):
-            x_cen=coordinates[j+i]['X']+coordinates[j+i+1]['X']/2.0
-            y_cen = coordinates[j+i]['Y'] + coordinates[j+i + 1]['Y'] / 2.0
-            center.append({'X':x_cen,'Y':y_cen})
-    verti_center_main.append(center)
-
+def get_elevation(lat, lng):
+    import urllib, json
+    response = urllib.urlopen("https://maps.googleapis.com/maps/api/elevation/json?locations=" + str(lat) + "," +
+                            str(lng) + "&key=AIzaSyDTJkkx8M1hzY3OpG-lL66LmoBYoZRKMBg")
+    return float(json.load(response)["results"][0]["elevation"])
 
 
 
