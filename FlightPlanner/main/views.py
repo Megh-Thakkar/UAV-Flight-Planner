@@ -62,17 +62,19 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     print path
     csvfile = open(path, "w+b")
     filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-    filewriter.writerow(['X', 'Y'])
+    filewriter.writerow(['X', 'Y', 'Elevation'])
     for i in range(0, len(line_path)):
         print line_path[i]['X'], line_path[i]['Y']
-        filewriter.writerow([str(line_path[i]['X']), str(line_path[i]['Y'])])   # , str(get_elevation(utm.to_latlon((line_path[i]['X']), (line_path[i]['Y']), zone_no, zone_name)))
+        lat, lng = utm.to_latlon((line_path[i]['X']), (line_path[i]['Y']), zone_no, zone_name)
+        filewriter.writerow([str(line_path[i]['X']), str(line_path[i]['Y']), str(get_elevation(lat, lng))])   # , str(get_elevation(utm.to_latlon((line_path[i]['X']), (line_path[i]['Y']), zone_no, zone_name)))
+    csvfile.close()
     kml_file = KMLFile()
     kml_file.name = str(name_int)
     kml_file.csv_file.name = path
     kml_file.zone_name = zone_name
     kml_file.zone_no = zone_no
     kml_file.save()
-    # generate_kml(path, kml_file)
+    generate_kml(path, kml_file)
     return kml_file
 ####################################    Main Functions    ####################################
 
@@ -82,15 +84,17 @@ import numpy as np
 
 def generate_kml(filename, kml_file):
     import utm
+    print filename
     inputfile = csv.reader(open(filename,'r'))
     kml=simplekml.Kml()
     ls = kml.newlinestring(name="Journey path")
     zone_no = kml_file.zone_no
     zone_name = kml_file.zone_name
-    inputfile.next()
+    header = inputfile.next()
     for row in inputfile:
-        lat, lng = utm.to_latlon(row[0], row[1], zone_no, zone_name)
-        ls.coords.addcoordinates([(lng, lat, get_elevation(lat, lng))])  #longitude, latitude
+        print row[0], row[1]
+        lat, lng = utm.to_latlon(float(row[0]), float(row[1]), zone_no, zone_name)
+        ls.coords.addcoordinates([(lng, lat, row[2])])  #longitude, latitude
         # print row[2]
     ls.extrude = 1
     ls.tessellate = 1
