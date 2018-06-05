@@ -34,9 +34,14 @@ def input_map(request):
         ne_lat = float(data['ne_lat'])
         sw_lng = float(data['sw_lng'])
         sw_lat = float(data['sw_lat'])
-        x_resolution = int(data['x_res'])
-        y_resolution = int(data['y_res'])
-        GSD = float(data['gsd'])
+        try:
+            x_resolution = int(data['x_res'])
+            y_resolution = int(data['y_res'])
+            GSD = float(data['gsd'])
+            if (x_resolution == 0 or y_resolution == 0 or GSD == 0):
+                raise Exception
+        except:
+            return render(request, 'main/input_map.html')
         NE_UTM_X, NE_UTM_Y, NE_UTM_ZONE_NO, NE_UTM_NAME = utm.from_latlon(ne_lat, ne_lng)
         SW_UTM_X, SW_UTM_Y, SW_UTM_ZONE_NO, SW_UTM_NAME = utm.from_latlon(sw_lat, sw_lng)
         if(NE_UTM_NAME!=SW_UTM_NAME or NE_UTM_ZONE_NO!=SW_UTM_ZONE_NO):
