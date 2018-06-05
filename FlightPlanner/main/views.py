@@ -48,6 +48,7 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     import utm
     print x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name
     centres = mesh(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, pixel_to_km)
+    print centres, 'centres'
     line_path = pathline(centres)
     name_int=0
     while(1):
@@ -58,9 +59,9 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
             continue
         except:
             break
-    path = os.path.join(settings.MEDIA_ROOT, 'csv', 'csv' + str(name_int)+'.csv')
+    path = os.path.join(settings.MEDIA_ROOT, 'csv', 'csv' + str(name_int) + '.csv')
     print path
-    csvfile = open(path, "w+b")
+    csvfile = open(str(path), "w+b")
     filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
     filewriter.writerow(['X', 'Y', 'Elevation'])
     for i in range(0, len(line_path)):
@@ -114,24 +115,24 @@ def get_elevation(lat, lng):
     return float(json.load(response)["results"][0]["elevation"])
 
 def mesh(x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km):
-    try:
-        centres = []
-        per_X = GSD * x_resolution * pixel_to_km                        ### x3,y3-------x4,y4
-        per_Y = GSD * y_resolution * pixel_to_km                        #    |            |
-        lx = np.linspace(x1, x2, int((x2 - x1) / per_X))                 #    |            |
-        ly = np.linspace(y1, y3, int((y3 - y1) / per_Y))                 ### x1,y1-------x2,y2
-        kx, ky = np.meshgrid(lx, ly)
 
-        for i in range(0, len(kx) - 1):
-            y = (ky[i][0] + ky[i + 1][0]) / 2.00
-            for j in range(0, len(kx[i]) - 1):
-                centre = (kx[i][j] + kx[i][j + 1]) / 2.00
-                centres.append({'X': centre, 'Y': y})
-
-        return centres
-    except:
-        return
-
+    centres = []
+    per_X = GSD * x_resolution * pixel_to_km                        ### x3,y3-------x4,y4
+    per_Y = GSD * y_resolution * pixel_to_km                        #    |            |
+    print x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km
+    lx = np.linspace(x1, x2, int((x2 - x1) / per_X))                 #    |            |
+    print per_X
+    ly = np.linspace(y1, y3, int((y3 - y1) / per_Y))                 ### x1,y1-------x2,y2
+    kx, ky = np.meshgrid(lx, ly)
+    print kx, ky
+    for i in range(0, len(kx) - 1):
+        y = (ky[i][0] + ky[i + 1][0]) / 2.00
+        for j in range(0, len(kx[i]) - 1):
+            centre = (kx[i][j] + kx[i][j + 1]) / 2.00
+            centres.append({'X': centre, 'Y': y})
+    print 'meshgrid', centres
+    return centres
+    
 def pathline(centres):
     path = []
     lineno = 0
