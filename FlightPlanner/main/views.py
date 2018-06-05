@@ -114,8 +114,8 @@ def mesh(x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km=0.001):
         centres = []
         per_X = GSD * x_resolution * pixel_to_km                        ### x3,y3-------x4,y4
         per_Y = GSD * y_resolution * pixel_to_km                        #    |            |
-        lx = np.linspace(0, x2, int((x2 - x1) / per_X))                 #    |            |
-        ly = np.linspace(0, y3, int((y3 - y1) / per_Y))                 ### x1,y1-------x2,y2
+        lx = np.linspace(x1, x2, int((x2 - x1) / per_X))                 #    |            |
+        ly = np.linspace(y1, y3, int((y3 - y1) / per_Y))                 ### x1,y1-------x2,y2
         kx, ky = np.meshgrid(lx, ly)
 
         for i in range(0, len(kx) - 1):
