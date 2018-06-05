@@ -4,20 +4,6 @@ from .models import *
 from django.conf import settings
 import os
 # Create your views here.
-
-def upload_file(request):
-    if request.method == 'POST':
-        from django.core.files import File
-        try:
-            k_file = request.FILES['k_file']
-            new_k_file = File(k_file)
-            kml_file = KMLFile.objects.create(name=str(KMLFile.objects.count()))
-            kml_file.file_path.save('kmlfile{}.kml'.format(kml_file.name), new_k_file)
-            return redirect(reverse("main:render_map", kwargs = {"name":kml_file.name}))
-        except:
-            pass
-    return render(request, 'main/upload_file.html')
-
 def render_map(request, name):
     return render(request, 'main/render_map.html', {"name":'kmlfile' + name+'.kml'})
 
@@ -28,6 +14,7 @@ def input_map(request):
     if request.method == 'POST':
         import utm
         data = request.POST
+        print data
         if (data['ne_lng'] == '' or data['ne_lat'] == '' or data['sw_lng'] == '' or data['sw_lat'] == ''):
             return redirect("main:input_map")
         ne_lng = float(data['ne_lng'])
@@ -42,35 +29,51 @@ def input_map(request):
                 raise Exception
         except:
             return render(request, 'main/input_map.html')
+        print ne_lng, sw_lat, ne_lat, sw_lng
         NE_UTM_X, NE_UTM_Y, NE_UTM_ZONE_NO, NE_UTM_NAME = utm.from_latlon(ne_lat, ne_lng)
         SW_UTM_X, SW_UTM_Y, SW_UTM_ZONE_NO, SW_UTM_NAME = utm.from_latlon(sw_lat, sw_lng)
+        print NE_UTM_X, NE_UTM_Y, NE_UTM_ZONE_NO, NE_UTM_NAME
+        print SW_UTM_X, SW_UTM_Y, SW_UTM_ZONE_NO, SW_UTM_NAME
         if(NE_UTM_NAME!=SW_UTM_NAME or NE_UTM_ZONE_NO!=SW_UTM_ZONE_NO):
             return HttpResponse("UTM Zones do not match. Select a smaller region.")
         else:
-            return redirect(reverse("main:generate_csv", kwargs={"x_resolution":x_resolution, "y_resolution":y_resolution, "x1":NE_UTM_X, "y1":NE_UTM_Y, "x2":SW_UTM_X, "y3":SW_UTM_Y, "GSD":GSD, "zone_no":NE_UTM_ZONE_NO, "zone_name":NE_UTM_NAME}))
+            print x_resolution, y_resolution, SW_UTM_X, SW_UTM_Y, NE_UTM_X, NE_UTM_Y,  GSD, NE_UTM_ZONE_NO, NE_UTM_NAME
+            kml_file = generate_csv(x_resolution, y_resolution, SW_UTM_X, SW_UTM_Y, NE_UTM_X, NE_UTM_Y,  GSD, NE_UTM_ZONE_NO, NE_UTM_NAME)
+            # return HttpResponse("UTM Zones do not match. Select a smaller region.")
+            return render(request, 'main/test.html', {'name':kml_file.name+'.kml'})
     else:
         return render(request, 'main/input_map.html')
 
-def generate_csv(request, x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name):
-    line_path = pathline(mesh(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, pixel_to_km=0.00001))
-    i=0
-    while(KMLFile.objects.get(name=i)):
-        i += 1
-    path = os.path.join(settings.MEDIA_ROOT, 'csv', str(i)+'.csv')
-    with open(path, 'wb') as csvfile:
-        csvfile.truncate()
-        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-        filewriter.writerow('X', 'Y')
-        for i in range(0, len(line_path)):
-            filewriter.writerow([str(line_path[i]['X']), str(line_path[i]['Y'])])
+def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name):
+    import utm
+    print x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name
+    centres = mesh(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, pixel_to_km=0.00001)
+    line_path = pathline(centres)
+    name_int=0
+    while(1):
+        try:
+            temp_file = KMLFile.objects.get(name=str(name_int))
+            name_int += 1
+            print name_int
+            continue
+        except:
+            break
+    path = os.path.join(settings.MEDIA_ROOT, 'csv', 'csv' + str(name_int)+'.csv')
+    print path
+    csvfile = open(path, "w+b")
+    filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+    filewriter.writerow(['X', 'Y'])
+    for i in range(0, len(line_path)):
+        print line_path[i]['X'], line_path[i]['Y']
+        filewriter.writerow([str(line_path[i]['X']), str(line_path[i]['Y'])])   # , str(get_elevation(utm.to_latlon((line_path[i]['X']), (line_path[i]['Y']), zone_no, zone_name)))
     kml_file = KMLFile()
-    kml_file.name = str(i)
+    kml_file.name = str(name_int)
     kml_file.csv_file.name = path
     kml_file.zone_name = zone_name
     kml_file.zone_no = zone_no
     kml_file.save()
-    generate_kml(path, kml_file)
-    return render(request, 'main/test.html', {'name':kml_file+'.kml'})
+    # generate_kml(path, kml_file)
+    return kml_file
 ####################################    Main Functions    ####################################
 
 import csv
@@ -106,21 +109,24 @@ def get_elevation(lat, lng):
                             str(lng) + "&key=AIzaSyDTJkkx8M1hzY3OpG-lL66LmoBYoZRKMBg")
     return float(json.load(response)["results"][0]["elevation"])
 
-def mesh(x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km=0.00001):
-    centres = []
-    per_X = GSD * x_resolution * pixel_to_km                        ### x3,y3-------x4,y4
-    per_Y = GSD * y_resolution * pixel_to_km                        #    |            |
-    lx = np.linspace(0, x2, int((x2 - x1) / per_X))                 #    |            |
-    ly = np.linspace(0, y3, int((y3 - y1) / per_Y))                 ### x1,y1-------x2,y2
-    kx, ky = np.meshgrid(lx, ly)
+def mesh(x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km=0.001):
+    try:
+        centres = []
+        per_X = GSD * x_resolution * pixel_to_km                        ### x3,y3-------x4,y4
+        per_Y = GSD * y_resolution * pixel_to_km                        #    |            |
+        lx = np.linspace(0, x2, int((x2 - x1) / per_X))                 #    |            |
+        ly = np.linspace(0, y3, int((y3 - y1) / per_Y))                 ### x1,y1-------x2,y2
+        kx, ky = np.meshgrid(lx, ly)
 
-    for i in range(0, len(kx) - 1):
-        y = (ky[i][0] + ky[i + 1][0]) / 2.00
-        for j in range(0, len(kx[i]) - 1):
-            centre = (kx[i][j] + kx[i][j + 1]) / 2.00
-            centres.append({'X': centre, 'Y': y})
+        for i in range(0, len(kx) - 1):
+            y = (ky[i][0] + ky[i + 1][0]) / 2.00
+            for j in range(0, len(kx[i]) - 1):
+                centre = (kx[i][j] + kx[i][j + 1]) / 2.00
+                centres.append({'X': centre, 'Y': y})
 
-    return centres
+        return centres
+    except:
+        return
 
 def pathline(centres):
     path = []
