@@ -25,7 +25,8 @@ def input_map(request):
             x_resolution = int(data['x_res'])
             y_resolution = int(data['y_res'])
             GSD = float(data['gsd'])
-            if (x_resolution == 0 or y_resolution == 0 or GSD == 0):
+            pixel_to_km = float(data['pixel_to_km'])
+            if (x_resolution == 0 or y_resolution == 0 or GSD == 0 or pixel_to_km == 0):
                 raise Exception
         except:
             return render(request, 'main/input_map.html')
@@ -37,17 +38,16 @@ def input_map(request):
         if(NE_UTM_NAME!=SW_UTM_NAME or NE_UTM_ZONE_NO!=SW_UTM_ZONE_NO):
             return HttpResponse("UTM Zones do not match. Select a smaller region.")
         else:
-            print x_resolution, y_resolution, SW_UTM_X, SW_UTM_Y, NE_UTM_X, NE_UTM_Y,  GSD, NE_UTM_ZONE_NO, NE_UTM_NAME
-            kml_file = generate_csv(x_resolution, y_resolution, SW_UTM_X, SW_UTM_Y, NE_UTM_X, NE_UTM_Y,  GSD, NE_UTM_ZONE_NO, NE_UTM_NAME)
+            kml_file = generate_csv(x_resolution, y_resolution, SW_UTM_X, SW_UTM_Y, NE_UTM_X, NE_UTM_Y,  GSD, NE_UTM_ZONE_NO, NE_UTM_NAME, pixel_to_km)
             # return HttpResponse("UTM Zones do not match. Select a smaller region.")
             return render(request, 'main/test.html', {'name':kml_file.name+'.kml'})
     else:
         return render(request, 'main/input_map.html')
 
-def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name):
+def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name, pixel_to_km):
     import utm
     print x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name
-    centres = mesh(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, pixel_to_km=0.00001)
+    centres = mesh(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, pixel_to_km)
     line_path = pathline(centres)
     name_int=0
     while(1):
@@ -94,7 +94,7 @@ def generate_kml(filename, kml_file):
     for row in inputfile:
         print row[0], row[1]
         lat, lng = utm.to_latlon(float(row[0]), float(row[1]), zone_no, zone_name)
-        ls.coords.addcoordinates([(lng, lat, row[2])])  #longitude, latitude
+        ls.coords.addcoordinates([(lng, lat, float(row[2]) + 100.00)])  #longitude, latitude
         # print row[2]
     ls.extrude = 1
     ls.tessellate = 1
@@ -113,7 +113,7 @@ def get_elevation(lat, lng):
                             str(lng) + "&key=AIzaSyDTJkkx8M1hzY3OpG-lL66LmoBYoZRKMBg")
     return float(json.load(response)["results"][0]["elevation"])
 
-def mesh(x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km=0.001):
+def mesh(x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km):
     try:
         centres = []
         per_X = GSD * x_resolution * pixel_to_km                        ### x3,y3-------x4,y4
