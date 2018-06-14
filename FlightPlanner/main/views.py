@@ -163,4 +163,46 @@ cfile(centres)
 #	print path[i],"\n"
 """
 
+'''
+rasterio
+
+import rasterio
+import numpy as np
+import csv
+filename = 'img.tif'
+with rasterio.open(filename) as src:
+    #read image
+    image= src.read()
+    # transform image
+    bands,rows,cols = np.shape(image)
+    image1 = image.reshape (rows*cols,bands)
+    print image1
+    print(np.shape(image1))
+    # bounding box of image
+    l,b,r,t = src.bounds
+    #resolution of image
+    res = src.res
+    print 'Resolution: ', res
+    print 'Bounds: ', src.bounds
+    # meshgrid of X and Y
+    x = np.arange(l,r, float((r-l)/rows))
+    y = np.arange(t,b, float((b-t)/cols))
+    X,Y = np.meshgrid(x,y)
+    print (np.shape(X))
+    # flatten X and Y
+    newX = np.array(X.flatten(1))
+    newY = np.array(Y.flatten(1))
+    print (np.shape(newX))
+    print (np.shape(newY))
+    print newX
+    print newY
+    # join XY and Z information
+    export = np.column_stack((newX, newY, image1))
+    fname='XYZ.csv'
+    with open(fname, 'w') as fp:
+        a = csv.writer(fp, delimiter=',')
+        a.writerows(export)
+        fp.close() # close file
+
+'''
 
