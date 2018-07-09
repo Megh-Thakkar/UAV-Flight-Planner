@@ -35,9 +35,9 @@ class ShadowMap(Map):
             # print shadowmap.shape
             # print self.heightmap.shape
             # print self.heightmap.heights
-            print self.size_y, self.size_x
-            print len(self.heightmap.heights)
-            print len(self.heightmap.heights[0])
+            # print self.size_y, self.size_x
+            # print len(self.heightmap.heights)
+            # print len(self.heightmap.heights[0])
             for y in xrange(0, self.size_y):
                 for x in xrange(0, self.size_x):
                     shadowmap[(y, x)] = 1 if self.is_lit(x, y) else 0

@@ -9,17 +9,20 @@ from suncalc import solar_position
 from datetime import datetime
 from shadowmap import ShadowMap, get_projection_north_deviation
 from math import sin, cos, tan, asin, atan2, pi
+import ephem
+import math
 numpy.set_printoptions(threshold=numpy.nan)
 
-
 # Solar constants
-
 rad = pi / 180.0
 epochStart = datetime(1970, 1, 1)
 J1970 = 2440588
 J2000 = 2451545
 dayMs = 24 * 60 * 60 * 1000
 e = rad * 23.4397 # obliquity of the Earth
+
+_MONTHNAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # Create your views here.
 def render_map(request, name):
@@ -61,6 +64,7 @@ def input_map(request):
                 name = kml_file.name
             except:
                 return kml_file
+            print kml_file.name
             # return HttpResponse("UTM Zones do not match. Select a smaller region.")
             return render(request, 'main/test.html', {'name':kml_file.name+'.kml'})
     else:
@@ -107,7 +111,20 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     csvfile.close()
     t = datetime.now()
     dev = get_projection_north_deviation(heightmap.proj, heightmap.lat,heightmap.lng)
-    sunpos = solar_position(t, heightmap.lat, heightmap.lng)
+    gatech = ephem.Observer()
+    gatech.lon, gatech.lat = heightmap.lng, heightmap.lat
+    gatech.date = "%s/%02d/%s %s:%s:%s"%(t.strftime("%Y"), _MONTHNAMES.index(t.strftime("%b")), t.strftime("%d"), t.strftime("%H"), t.strftime("%M"), t.strftime("%S"))
+    # gatech.date = '2018/7/9 06:00:00'
+    print gatech.date
+    sun = ephem.Sun()
+    sun.compute(gatech)
+    print("%s %s" % (sun.alt, sun.az))
+    azimuth = sun.az
+    altitude = sun.alt
+    sunpos = {
+        'azimuth' : degree_to_rad(azimuth),
+        'altitude' : degree_to_rad(altitude)
+    }
     sun_x = -sin(sunpos['azimuth'] - dev) * cos(sunpos['altitude'])
     sun_y = -cos(sunpos['azimuth'] - dev) * cos(sunpos['altitude'])
     sun_z = sin(sunpos['altitude'])
@@ -123,6 +140,10 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     # print heightmap.heights
     print render_matrix
     return kml_file
+
+def degree_to_rad(degrees):
+    degree_str = str(degrees).split(':')
+    return math.radians(float(degree_str[0]) + float(degree_str[1])/60 + float(degree_str[2])/3600)
 ####################################    Main Functions    ####################################
 
 import csv
