@@ -21,7 +21,7 @@ J2000 = 2451545
 dayMs = 24 * 60 * 60 * 1000
 e = rad * 23.4397 # obliquity of the Earth
 
-_MONTHNAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+_MONTHNAMES = [None, "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # Create your views here.
@@ -109,16 +109,21 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
         # print line_path[i]['X'], line_path[i]['Y']
         filewriter.writerow([str(line_path[i]['X']), str(line_path[i]['Y']), v])   # , str(get_elevation(utm.to_latlon((line_path[i]['X']), (line_path[i]['Y']), zone_no, zone_name)))
     csvfile.close()
-    t = datetime.now()
+    # t = datetime.now()
+    # print t
     dev = get_projection_north_deviation(heightmap.proj, heightmap.lat,heightmap.lng)
     gatech = ephem.Observer()
-    gatech.lon, gatech.lat = heightmap.lng, heightmap.lat
-    gatech.date = "%s/%02d/%s %s:%s:%s"%(t.strftime("%Y"), _MONTHNAMES.index(t.strftime("%b")), t.strftime("%d"), t.strftime("%H"), t.strftime("%M"), t.strftime("%S"))
+    gatech.lon, gatech.lat = '%.2f'%heightmap.lng, '%.2f'%heightmap.lat
+    # month_index = _MONTHNAMES.index(t.strftime("%b"))
+    # gatech.date = "%s/%02d/%s %s:%s:%s"%(t.strftime("%Y"), month_index, t.strftime("%d"), t.strftime("%H"), t.strftime("%M"), t.strftime("%S"))
+    # print gatech.date
     # gatech.date = '2018/7/9 06:00:00'
-    print gatech.date
+    # print gatech.date
     sun = ephem.Sun()
+    # print gatech.date, heightmap.lng, heightmap.lat
+    # print gatech.lon, gatech.lat
     sun.compute(gatech)
-    print("%s %s" % (sun.alt, sun.az))
+    # print("%s %s" % (sun.alt, sun.az))
     azimuth = sun.az
     altitude = sun.alt
     sunpos = {
@@ -130,12 +135,35 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     sun_z = sin(sunpos['altitude'])
     shadowmap = ShadowMap(centre_lat, centre_lon, x_resolution, y_resolution, heightmap.size_x, heightmap.size_y, heightmap.proj, pixel_to_km, GSD, x1, y1, x2, y3, sun_x, sun_y, sun_z, heightmap, 1.5)
     render_matrix = shadowmap.render()
+    # print render_matrix
+    # print shadowmap.size_y, shadowmap.size_x
+    # struct_time = time.strptime("30 Nov 00", "%d %b %y")
+    #print render_matrix
+    s = ephem.Sun()
+    s.compute()
+    o = ephem.Observer()
+    o.lat = '%0.2f'%heightmap.lat
+    o.lon = '%0.2f'%heightmap.lng
+    # print o.lat, o.lon
+    # print 'O', o.date
+    print render_matrix
+    render_matrix=rever(render_matrix, shadowmap) 
+    # print o.next_rising(s), o.previous_setting(s)
+    next_rising = ephem_to_datetime(o.next_rising(s))
+    previous_setting = ephem_to_datetime(o.previous_setting(s))
+    current_time = ephem_to_datetime(o.date)
+    # print previous_setting, current_time, next_rising
+    if next_rising > current_time and previous_setting < current_time:
+        for i in xrange(0, len(render_matrix)):
+            render_matrix[i] = 0
     kml_file = KMLFile()
     kml_file.name = str(name_int)
     kml_file.csv_file.name = path
     kml_file.zone_name = zone_name
     kml_file.zone_no = zone_no
     kml_file.save()
+    print '######################'
+    # print len(centres) == len(render_matrix)
     generate_kml(path, kml_file)
     # print heightmap.heights
     print render_matrix
@@ -144,6 +172,12 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
 def degree_to_rad(degrees):
     degree_str = str(degrees).split(':')
     return math.radians(float(degree_str[0]) + float(degree_str[1])/60 + float(degree_str[2])/3600)
+
+def ephem_to_datetime(ephem_date):
+    ephem_date_list = str(ephem_date).split('/')
+    ephem_date_list[1] = _MONTHNAMES[int(ephem_date_list[1])]
+    ephem_date = '/'.join(ephem_date_list)
+    return datetime.strptime(str(ephem_date), "%Y/%b/%d %H:%M:%S")
 ####################################    Main Functions    ####################################
 
 import csv
@@ -204,6 +238,8 @@ def mesh(x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km):
             centre = (kx[i][j] + kx[i][j + 1]) / 2.00
             centres.append({'X': centre, 'Y': y})
     # print 'meshgrid', centres
+    # print len(lx), len(ly)
+    # print len(kx[0]), len(kx)
     return centres
     
 def pathline(centres):
@@ -229,53 +265,18 @@ def pathline(centres):
             lineno += 1
     return path
 
-"""centres = mesh(1000, 1000, 0, 0, 1, 0, 1, 2, 0, 2, 5)
-path = pathline(centres)
-cfile(centres)
-# for i in range(0,len(path)):
-#	print path[i],"\n"
-"""
 
-'''
-rasterio
-
-import rasterio
-import numpy as np
-import csv
-filename = 'img.tif'
-with rasterio.open(filename) as src:
-    #read image
-    image= src.read()
-    # transform image
-    bands,rows,cols = np.shape(image)
-    image1 = image.reshape (rows*cols,bands)
-    print image1
-    print(np.shape(image1))
-    # bounding box of image
-    l,b,r,t = src.bounds
-    #resolution of image
-    res = src.res
-    print 'Resolution: ', res
-    print 'Bounds: ', src.bounds
-    # meshgrid of X and Y
-    x = np.arange(l,r, float((r-l)/rows))
-    y = np.arange(t,b, float((b-t)/cols))
-    X,Y = np.meshgrid(x,y)
-    print (np.shape(X))
-    # flatten X and Y
-    newX = np.array(X.flatten(1))
-    newY = np.array(Y.flatten(1))
-    print (np.shape(newX))
-    print (np.shape(newY))
-    print newX
-    print newY
-    # join XY and Z information
-    export = np.column_stack((newX, newY, image1))
-    fname='XYZ.csv'
-    with open(fname, 'w') as fp:
-        a = csv.writer(fp, delimiter=',')
-        a.writerows(export)
-        fp.close() # close file
-
-'''
-
+def rever(render_matrix, shadowmap):
+    # lineno=0
+    rev=[]
+    path=[]
+    print shadowmap.size_x, shadowmap.size_y
+    for i in range(0,shadowmap.size_y):
+        if(i%2==0):
+            path += render_matrix[i][:shadowmap.size_x].tolist()
+        else:
+            li=render_matrix[i][:shadowmap.size_x]
+            li=li.tolist()
+            li.reverse()
+            path = path + li
+    return path
