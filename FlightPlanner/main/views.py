@@ -12,6 +12,7 @@ from math import sin, cos, tan, asin, atan2, pi
 import ephem
 import math
 from django.core.files import File
+import io
 # from io import BytesIO
 numpy.set_printoptions(threshold=numpy.nan)
 
@@ -163,13 +164,13 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     previous_setting = ephem_to_datetime(o.previous_setting(s))
     current_time = ephem_to_datetime(o.date)
     # print previous_setting, current_time, next_rising
-    # if next_rising.day == previous_setting.day: # Sun is set
-    #     for i in xrange(0, len(render_matrix)):
-    #         render_matrix[i] = 0
+    if next_rising.day == previous_setting.day: # Sun is set
+        for i in xrange(0, len(render_matrix)):
+            render_matrix[i] = 0
     kml_file = KMLFile()
     kml_file.name = str(name_int)
-    f = open(path)
-    kml_file.csv_file.save(str(kml_file.name)+'.csv', File(f))
+    # f = open(path)
+    # kml_file.csv_file.save(str(kml_file.name)+'.csv', File(f))
     # kml_file.file_path.name = kml_path
     kml_file.save()
     kml_file.zone_name = zone_name
@@ -178,6 +179,21 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     print '######################'
     # print len(centres) == len(render_matrix)
     generate_kml(path, kml_file, render_matrix)
+    i = 0
+    new_path = os.path.join(settings.MEDIA_ROOT, 'csv', 'csv_final' + str(name_int) + '.csv')
+    with open(path, 'rb') as inp, open(str(new_path), 'wb') as out:
+        writer = csv.writer(out)
+        count = 0
+        for row in csv.reader(inp):
+            if render_matrix[i] != 0:
+                writer.writerow(row)
+                count += 1
+        if count == 0:
+            writer.writerow(['X', 'Y', 'Elevation'])
+        i += 1
+    f = open(new_path)
+    kml_file.csv_file.save(str(kml_file.name)+'.csv', File(f))
+    os.remove(path)
     # print heightmap.heights
     # print render_matrix
     # print len(render_matrix) == shadowmap.size_x * shadowmap.size_y
