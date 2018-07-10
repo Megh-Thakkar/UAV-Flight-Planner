@@ -5,7 +5,7 @@
 	<link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
     <style>
       .map {
-        height: 400px;
+        height: 100%;
         width: 100%;
       }
     </style>
@@ -13,7 +13,7 @@
       <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="robots" content="index, all" />
-    <title>DigitalGlobe - ol3-cesium</title>
+    <title>UAV Flight Path</title>
     <link rel="stylesheet" href="{% static 'main/css/ol.css' %}" type="text/css">
     <link rel="stylesheet" href="{% static 'main/css/ol3-layerswitcher.css' %}" type="text/css">
   </head>
@@ -23,6 +23,9 @@
     <input type="button" value="3D / 2D" onclick="javascript:ol3d.setEnabled(!ol3d.getEnabled())" />
     <script src="{% static 'main/js/inject_ol3_cesium.js' %}"></script>
     <script src="{% static 'main/js/ol3-layerswitcher.js' %}"></script>
+    <a href="{% url 'main:input_map' %}">Map Again?</a><br>
+    <a href="{% url 'main:download_csv' kml_file.name %}">Download Corresponding CSV File</a>
+
     <script>
       var projection = ol.proj.get('EPSG:3857');
 
@@ -38,7 +41,7 @@ var ol2d = new ol.Map({
               }),
             new ol.layer.Vector({
                 source: new ol.source.Vector({
-                url: "http://127.0.0.1:8000/media/files/{{name}}",
+                url: "{{kml_url}}",
                 format: new ol.format.KML()
                 })
             }),

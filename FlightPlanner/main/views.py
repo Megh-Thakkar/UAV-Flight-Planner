@@ -11,6 +11,8 @@ from shadowmap import ShadowMap, get_projection_north_deviation
 from math import sin, cos, tan, asin, atan2, pi
 import ephem
 import math
+from django.core.files import File
+# from io import BytesIO
 numpy.set_printoptions(threshold=numpy.nan)
 
 # Solar constants
@@ -64,11 +66,19 @@ def input_map(request):
                 name = kml_file.name
             except:
                 return kml_file
-            print kml_file.name
+            # print kml_file.file_path.url
+            kml_url = request.build_absolute_uri(kml_file.file_path.url)
+            # print kml_file.name
             # return HttpResponse("UTM Zones do not match. Select a smaller region.")
-            return render(request, 'main/test.html', {'name':kml_file.name+'.kml'})
+            return render(request, 'main/test.html', {'kml_file':kml_file, 'kml_url':kml_url})
     else:
         return render(request, 'main/input_map.html')
+
+def download_csv(request, name):
+    kml_file = KMLFile.objects.get(name=name)
+    response = HttpResponse(kml_file.csv_file, content_type="application/csv")
+    response['Content-Disposition'] = 'attachment; filename=%s.csv' % name
+    return response
 
 def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name, pixel_to_km):
     import utm
@@ -135,7 +145,7 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     sun_z = sin(sunpos['altitude'])
     shadowmap = ShadowMap(centre_lat, centre_lon, x_resolution, y_resolution, heightmap.size_x, heightmap.size_y, heightmap.proj, pixel_to_km, GSD, x1, y1, x2, y3, sun_x, sun_y, sun_z, heightmap, 1.5)
     render_matrix = shadowmap.render()
-    # print render_matrix
+    print render_matrix
     # print shadowmap.size_y, shadowmap.size_x
     # struct_time = time.strptime("30 Nov 00", "%d %b %y")
     #print render_matrix
@@ -146,27 +156,31 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     o.lon = '%0.2f'%heightmap.lng
     # print o.lat, o.lon
     # print 'O', o.date
-    print render_matrix
+    # print render_matrix
     render_matrix=rever(render_matrix, shadowmap) 
     # print o.next_rising(s), o.previous_setting(s)
     next_rising = ephem_to_datetime(o.next_rising(s))
     previous_setting = ephem_to_datetime(o.previous_setting(s))
     current_time = ephem_to_datetime(o.date)
     # print previous_setting, current_time, next_rising
-    if next_rising > current_time and previous_setting < current_time:
-        for i in xrange(0, len(render_matrix)):
-            render_matrix[i] = 0
+    # if next_rising.day == previous_setting.day: # Sun is set
+    #     for i in xrange(0, len(render_matrix)):
+    #         render_matrix[i] = 0
     kml_file = KMLFile()
     kml_file.name = str(name_int)
-    kml_file.csv_file.name = path
+    f = open(path)
+    kml_file.csv_file.save(str(kml_file.name)+'.csv', File(f))
+    # kml_file.file_path.name = kml_path
+    kml_file.save()
     kml_file.zone_name = zone_name
     kml_file.zone_no = zone_no
     kml_file.save()
     print '######################'
     # print len(centres) == len(render_matrix)
-    generate_kml(path, kml_file)
+    generate_kml(path, kml_file, render_matrix)
     # print heightmap.heights
-    print render_matrix
+    # print render_matrix
+    # print len(render_matrix) == shadowmap.size_x * shadowmap.size_y
     return kml_file
 
 def degree_to_rad(degrees):
@@ -184,7 +198,7 @@ import csv
 import simplekml
 import numpy as np
 
-def generate_kml(filename, kml_file):
+def generate_kml(filename, kml_file, render_matrix):
     import utm
     # print filename
     inputfile = csv.reader(open(filename,'r'))
@@ -195,13 +209,23 @@ def generate_kml(filename, kml_file):
     zone_name = kml_file.zone_name
     header = inputfile.next()
     i = 1
+    prev_val = None
     for row in inputfile:
         # print row[0], row[1]
         lat, lng = utm.to_latlon(float(row[0]), float(row[1]), zone_no, zone_name)
-        ls.coords.addcoordinates([(lng, lat, float(row[2]) + 100.00)])  #longitude, latitude
-        pnt = fol.newpoint(coords=[(lng,lat, float(row[2]) + 100.00)])
-        pnt.style.iconstyle.color = simplekml.Color.red
-        pnt.style.iconstyle.scale = 0.05
+        try:
+            ls.coords.addcoordinates([(lng, lat, float(row[2]) + 100.00)])  #longitude, latitude
+            prev_val = float(row[2])
+            if render_matrix[i] != 0:
+                pnt = fol.newpoint(coords=[(lng,lat, float(row[2]) + 100.00)])
+                pnt.style.iconstyle.color = simplekml.Color.red
+                pnt.style.iconstyle.scale = 0.05
+        except:
+            ls.coords.addcoordinates([(lng, lat, float(prev_val) + 100.00)])
+            if render_matrix[i] != 0:
+                pnt = fol.newpoint(coords=[(lng,lat, float(prev_val) + 100.00)])
+                pnt.style.iconstyle.color = simplekml.Color.red
+                pnt.style.iconstyle.scale = 0.05
         i += 1
         # print row[2]
     ls.extrude = 1
@@ -212,8 +236,10 @@ def generate_kml(filename, kml_file):
     ls.style.polystyle.color = '7f00ff00'
     kml_path = os.path.join(settings.MEDIA_ROOT, 'files', str(kml_file.name)+'.kml')
     kml.save(kml_path)
-    kml_file.file_path.name = kml_path
+    f = open(kml_path)
+    kml_file.file_path.save(str(kml_file.name)+'.kml', File(f))
     kml_file.save()
+    os.remove(kml_path)
 
 # def get_elevation(lat, lng):
 #     import urllib, json
@@ -270,7 +296,7 @@ def rever(render_matrix, shadowmap):
     # lineno=0
     rev=[]
     path=[]
-    print shadowmap.size_x, shadowmap.size_y
+    # print shadowmap.size_x, shadowmap.size_y
     for i in range(0,shadowmap.size_y):
         if(i%2==0):
             path += render_matrix[i][:shadowmap.size_x].tolist()
