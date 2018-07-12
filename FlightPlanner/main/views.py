@@ -14,6 +14,7 @@ import math
 from django.core.files import File
 import io
 # from io import BytesIO
+# 30 m srtm data from http://dwtkns.com/srtm30m/
 numpy.set_printoptions(threshold=numpy.nan)
 
 # Solar constants
