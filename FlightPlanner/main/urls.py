@@ -7,6 +7,6 @@ app_name = 'main'
 urlpatterns = [
     url('^$', views.input_map, name='input_map'),
     url('^render_map/(?P<name>[\w\-]+)$', views.render_map, name='render_map'),
-    url('^test$', views.test, name='test'),
+    # url('^test$', views.test, name='test'),
     url('^download_csv/(?P<name>[\w\-]+)$', views.download_csv, name='download_csv'),
 ]

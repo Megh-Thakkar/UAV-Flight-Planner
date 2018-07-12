@@ -29,11 +29,9 @@ _MONTHNAMES = [None, "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # Create your views here.
+# For testing KML files
 def render_map(request, name):
     return render(request, 'main/render_map.html', {"name":'kmlfile' + name+'.kml'})
-
-def test(request):
-    return render(request, 'main/test.html')
 
 def input_map(request):
     if request.method == 'POST':
@@ -50,7 +48,7 @@ def input_map(request):
             x_resolution = int(data['x_res'])
             y_resolution = int(data['y_res'])
             GSD = float(data['gsd'])
-            pixel_to_km = float(data['pixel_to_km'])
+            pixel_to_km = float(data['pixel_to_km'])    # hidden value
             if (x_resolution == 0 or y_resolution == 0 or GSD == 0 or pixel_to_km == 0):
                 raise Exception
         except:
@@ -72,7 +70,7 @@ def input_map(request):
             kml_url = request.build_absolute_uri(kml_file.file_path.url)
             # print kml_file.name
             # return HttpResponse("UTM Zones do not match. Select a smaller region.")
-            return render(request, 'main/test.html', {'kml_file':kml_file, 'kml_url':kml_url})
+            return render(request, 'main/final_map.html', {'kml_file':kml_file, 'kml_url':kml_url})
     else:
         return render(request, 'main/input_map.html')
 
@@ -85,14 +83,14 @@ def download_csv(request, name):
 def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name, pixel_to_km):
     import utm
     # print x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone_name
-    centres = mesh(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, pixel_to_km)
+    centres = mesh(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, pixel_to_km)   # generates a matrix of coordinates for the path
     # print centres, 'centres'
-    line_path = pathline(centres)
+    line_path = pathline(centres)   # converts the matrix into a 1d list, for the final path
     name_int=0
     centre_lat, centre_lon = utm.to_latlon((x1+x2)/2, (y1+y3)/2, zone_no, zone_name)
     while(1):
         try:
-            temp_file = KMLFile.objects.get(name=str(name_int))
+            temp_file = KMLFile.objects.get(name=str(name_int)) # Files are named using plain integers
             name_int += 1
             # print name_int
             continue
@@ -100,7 +98,7 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
             break
     path = os.path.join(settings.MEDIA_ROOT, 'csv', 'csv' + str(name_int) + '.csv')
     # print path
-    proj = Proj(proj='utm', zone=zone_no, ellps='WGS84')
+    proj = Proj(proj='utm', zone=zone_no, ellps='WGS84')    # Proj instance for utm to lat long conversions
     elevation_dir = os.path.join(settings.MEDIA_ROOT, 'hgt')
     heightmap = SrtmHeightMap(centre_lat, centre_lon, 
                     x_resolution, y_resolution, proj, pixel_to_km, GSD, x1, y1, x2, y3,elevation_dir)
@@ -124,15 +122,11 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     # t = datetime.now()
     # print t
     dev = get_projection_north_deviation(heightmap.proj, heightmap.lat,heightmap.lng)
+    # observer at the centre of the point of interest
     gatech = ephem.Observer()
-    gatech.lon, gatech.lat = '%.2f'%heightmap.lng, '%.2f'%heightmap.lat
-    # month_index = _MONTHNAMES.index(t.strftime("%b"))
-    # gatech.date = "%s/%02d/%s %s:%s:%s"%(t.strftime("%Y"), month_index, t.strftime("%d"), t.strftime("%H"), t.strftime("%M"), t.strftime("%S"))
-    # print gatech.date
-    # gatech.date = '2018/7/9 06:00:00'
-    # print gatech.date
+    gatech.lon, gatech.lat = '%.2f'%heightmap.lng, '%.2f'%heightmap.lat # pyephem takes input as strings and not float!!!
     sun = ephem.Sun()
-    # print gatech.date, heightmap.lng, heightmap.lat
+    # print gatech.date, heightmap.lng, heightmap.lat   # date by default is UTC which should be used as other calculations are made accordingly
     # print gatech.lon, gatech.lat
     sun.compute(gatech)
     # print("%s %s" % (sun.alt, sun.az))
@@ -147,9 +141,9 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     sun_z = sin(sunpos['altitude'])
     shadowmap = ShadowMap(centre_lat, centre_lon, x_resolution, y_resolution, heightmap.size_x, heightmap.size_y, heightmap.proj, pixel_to_km, GSD, x1, y1, x2, y3, sun_x, sun_y, sun_z, heightmap, 1.5)
     render_matrix = shadowmap.render()
+    # 0 means shadow, 1 means lit
     print render_matrix
     # print shadowmap.size_y, shadowmap.size_x
-    # struct_time = time.strptime("30 Nov 00", "%d %b %y")
     #print render_matrix
     s = ephem.Sun()
     s.compute()
@@ -159,12 +153,13 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     # print o.lat, o.lon
     # print 'O', o.date
     # print render_matrix
-    render_matrix=rever(render_matrix, shadowmap) 
+    render_matrix=rever(render_matrix, shadowmap) # Single lined path for render_matrix
     # print o.next_rising(s), o.previous_setting(s)
     next_rising = ephem_to_datetime(o.next_rising(s))
     previous_setting = ephem_to_datetime(o.previous_setting(s))
     current_time = ephem_to_datetime(o.date)
     # print previous_setting, current_time, next_rising
+    # Check if the path isn't plotted after sunset or before sunrise
     if next_rising.day == previous_setting.day: # Sun is set
         for i in xrange(0, len(render_matrix)):
             render_matrix[i] = 0
@@ -177,7 +172,6 @@ def generate_csv(x_resolution, y_resolution, x1, y1, x2, y3,  GSD, zone_no, zone
     kml_file.zone_name = zone_name
     kml_file.zone_no = zone_no
     kml_file.save()
-    print '######################'
     # print len(centres) == len(render_matrix)
     generate_kml(path, kml_file, render_matrix)
     i = 0
@@ -233,6 +227,7 @@ def generate_kml(filename, kml_file, render_matrix):
         try:
             ls.coords.addcoordinates([(lng, lat, float(row[2]) + 100.00)])  #longitude, latitude
             prev_val = float(row[2])
+            # render_matrix[i] = 0 if area is under a shadow. Hence, does not create a placemark
             if render_matrix[i] != 0:
                 pnt = fol.newpoint(coords=[(lng,lat, float(row[2]) + 100.00)])
                 pnt.style.iconstyle.color = simplekml.Color.red
@@ -256,12 +251,13 @@ def generate_kml(filename, kml_file, render_matrix):
     f = open(kml_path)
     kml_file.file_path.save(str(kml_file.name)+'.kml', File(f))
     kml_file.save()
+    f.close()
     os.remove(kml_path)
 
 # def get_elevation(lat, lng):
 #     import urllib, json
 #     response = urllib.urlopen("https://maps.googleapis.com/maps/api/elevation/json?locations=" + str(lat) + "," +
-#                             str(lng) + "&key=AIzaSyDTJkkx8M1hzY3OpG-lL66LmoBYoZRKMBg")
+#                             str(lng) + "&key=" + GOOGLE_MAPS_ELEVATION_KEY)
 #     return float(json.load(response)["results"][0]["elevation"])
 
 def mesh(x_resolution, y_resolution, x1, y1, x2, y3, GSD, pixel_to_km):
